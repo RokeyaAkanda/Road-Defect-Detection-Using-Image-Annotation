@@ -1,0 +1,90 @@
+{
+    "description": "",
+    "tags": [],
+    "size": {
+        "height": 183,
+        "width": 275
+    },
+    "objects": [
+        {
+            "description": "",
+            "geometryType": "polygon",
+            "labelerLogin": "Nirjoy",
+            "tags": [],
+            "classTitle": "Paved",
+            "points": {
+                "exterior": [
+                    [
+                        66,
+                        47
+                    ],
+                    [
+                        43,
+                        55
+                    ],
+                    [
+                        68,
+                        59
+                    ],
+                    [
+                        2,
+                        83
+                    ],
+                    [
+                        1,
+                        182
+                    ],
+                    [
+                        118,
+                        183
+                    ],
+                    [
+                        128,
+                        47
+                    ]
+                ],
+                "interior": []
+            }
+        },
+        {
+            "description": "",
+            "geometryType": "polygon",
+            "labelerLogin": "Nirjoy",
+            "tags": [],
+            "classTitle": "Paved",
+            "points": {
+                "exterior": [
+                    [
+                        153,
+                        43
+                    ],
+                    [
+                        156,
+                        46
+                    ],
+                    [
+                        165,
+                        48
+                    ],
+                    [
+                        274,
+                        76
+                    ],
+                    [
+                        274,
+                        182
+                    ],
+                    [
+                        155,
+                        183
+                    ],
+                    [
+                        133,
+                        49
+                    ]
+                ],
+                "interior": []
+            }
+        }
+    ]
+}
