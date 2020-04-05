@@ -1,1 +1,1 @@
-# CSE-499
+# CSE-499 Senior Design
