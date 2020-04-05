@@ -1,0 +1,35 @@
+{
+    "classes": [
+        {
+            "title": "Puddle_tf",
+            "shape": "rectangle",
+            "color": "#676BC1",
+            "geometry_config": {}
+        },
+        {
+            "title": "Paved_tf",
+            "shape": "rectangle",
+            "color": "#947A19",
+            "geometry_config": {}
+        },
+        {
+            "title": "Hole_tf",
+            "shape": "rectangle",
+            "color": "#9D3B20",
+            "geometry_config": {}
+        },
+        {
+            "title": "bg_tf",
+            "shape": "rectangle",
+            "color": "#0F8A36",
+            "geometry_config": {}
+        }
+    ],
+    "tags": [
+        {
+            "name": "confidence_tf",
+            "value_type": "any_number",
+            "color": "#8A160F"
+        }
+    ]
+}
