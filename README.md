@@ -9,6 +9,5 @@ Tanvir Ahmed (1410982042)
 Sadia Ahmed Tandra (1631474042)  
 Jannatul Ferdouse Onny (1631561042)  
 Rokeya Akanda Sriti (1620165042)  
-
-CSE499 Section-10  
-North South University
+  
+North South University,Dhaka,Bangladesh.
