@@ -19,7 +19,7 @@ gauth = GoogleAuth()
 gauth.credentials = GoogleCredentials.get_application_default()
 drive = GoogleDrive(gauth)
 
-df = drive.CreateFile({'id': '13LZcIgT0m4SafyGE3nfOlIjF6Hvlfyw7'})
+df = drive.CreateFile({'id': '1fsAmPhxeKkmbGP8ymW6DImPg-ZgifdLU'})
 df.GetContentFile('roads.zip')
 !unzip roads.zip
 
@@ -34,6 +34,8 @@ for i in bad_img:
 
 for i in good_img:
   Y.append(1)
+
+classes=Y # saving classes to apply stratified cross-validation later
 
 import numpy as np
 Y=np.asarray(Y)
@@ -95,17 +97,75 @@ ImgArray=np.asarray(ImgArray)
 
 ImgArray.shape
 
-#cross validation
-from sklearn.model_selection import train_test_split,KFold
-kf=KFold(10,True,1)
-for train_index,test_index in kf.split(ImgArray):
-    print("Train Index: ", train_index)
-    print("Test Index: ", test_index)
-    print("\n")
+def Img_Augmentor(Img_Array,Y_Array,num_of_Img,num_of_aug): # Augmentation method
+  
+  from keras.preprocessing.image import ImageDataGenerator
+  datagen = ImageDataGenerator(rotation_range=40,
+        width_shift_range=0.2,
+        height_shift_range=0.2,
+        shear_range=0.2,
+        zoom_range=0.2,
+        horizontal_flip=True,
+        fill_mode='nearest') 
+  
+  # random index generator
+  indx_arr=[]        
+  from random import randint
+  for _ in range(num_of_Img):
+	  value = randint(0, len(Img_Array)-1)
+	  indx_arr.append(value)
+  selected_img=Img_Array[indx_arr] # randomly selected image
 
-print(train_index.shape)
+  agg=[] # augmented Image array
+  for i in selected_img:
+    aaa=i.reshape((1,)+i.shape)
+    aug_d=datagen.flow(aaa)
+    aug_img=[next(aug_d)[0].astype(np.float32) for i in range(num_of_aug)]
+    for j in range(0,len(aug_img)):
+      agg.append(aug_img[j])
 
-X_train, X_test, y_train, y_test = ImgArray[train_index], ImgArray[test_index], Y[train_index], Y[test_index]
+  agg=np.asarray(agg) # (3000, 48, 48, 3)
+
+  #merging augmented image with normal image
+  Img_Array=np.array(Img_Array)
+  augmented_image=np.array(agg)
+  new_Img_Arr=np.append(Img_Array,augmented_image,axis=0)
+  #new_Img_Arr=np.around(new_Img_Arr, decimals=3) # 3 decimal point
+ 
+  ## preparing Y_train
+  Y_new=Y_Array
+  y_tmp=Y_Array[indx_arr]
+  keep_y=[] # copying original Y_train to keep_y
+  for i in Y_new:
+    keep_y.append(i)
+  for i in y_tmp: # merging original Y and augmented Y
+    for j in range(0,(num_of_aug)):
+      keep_y.append(i)
+  new_y_Arr=np.asarray(keep_y)  
+    
+  return new_Img_Arr,new_y_Arr,indx_arr  # Method ends
+
+augmented_x,augmented_y,photo_indexes=Img_Augmentor(ImgArray,Y,100,2) #method call
+
+augmented_x.shape
+
+augmented_y.shape
+
+classes=np.asarray(classes)  # preparing class values from cross-validation
+values=classes[photo_indexes]
+values=np.asarray(values)
+
+tmp_arr=[]
+for i in values:  # adjusting class values
+  for j in range(0,2):
+    tmp_arr.append(i)
+tmp_arr=np.asarray(tmp_arr)
+
+tmp_arr.shape
+
+my_classes=np.append(classes,tmp_arr,axis=0) #merging old classes and new classes
+
+my_classes.shape
 
 # creating the network
 from keras.models import Model
@@ -152,10 +212,32 @@ from keras.losses import categorical_crossentropy
 from keras.optimizers import Adam
 model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
-model.fit(X_train,y_train,batch_size=64,epochs=10,verbose=1, validation_data=(X_test,y_test))
+augmented_y = augmented_y.astype(int)
 
-scores = model.evaluate(X_test, y_test, verbose=0)
-print("Accuracy: %.2f%%" % (scores[1]*100))
+# Training the model using K=5 fold cross-validation
+Predict_list=[]
+from sklearn.model_selection import KFold
+from sklearn.model_selection import StratifiedKFold
+from sklearn import metrics
+fold=0
+kf = StratifiedKFold(n_splits=5, random_state=None, shuffle=False)
+for train_index, test_index in kf.split(augmented_x,my_classes):
+   fold+=1
+   print("Fold:",fold," ","TRAIN:", train_index, "TEST:", test_index)
+   X_train, X_test = augmented_x[train_index], augmented_x[test_index]
+   y_train, y_test = augmented_y[train_index], augmented_y[test_index]
+   model.fit(X_train,y_train,batch_size=15,epochs=10,verbose=1, validation_data=(X_test,y_test))
+   score=model.evaluate(X_test, y_test, verbose=0)
+   Predict_list.append(score)
+
+print(Predict_list)
+
+accuracy=0
+for i in Predict_list:
+  accuracy=accuracy+i[1]
+accuracy=accuracy / 5   #as k=5 fold
+
+print("Accuracy: %.2f%%" % (accuracy*100))
 
 # creating the network
 from keras.models import Model
@@ -204,19 +286,40 @@ from keras.losses import categorical_crossentropy
 from keras.optimizers import Adam
 model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
-model.fit(X_train,y_train,batch_size=15,epochs=10,verbose=1, validation_data=(X_test,y_test))
+# Training the model using K=5 fold cross-validation
+Predict_list=[]
+from sklearn.model_selection import KFold
+from sklearn.model_selection import StratifiedKFold
+from sklearn import metrics
+fold=0
+kf = StratifiedKFold(n_splits=5, random_state=None, shuffle=False)
+for train_index, test_index in kf.split(augmented_x,my_classes):
+   fold+=1
+   print("Fold:",fold," ","TRAIN:", train_index, "TEST:", test_index)
+   X_train, X_test = augmented_x[train_index], augmented_x[test_index]
+   y_train, y_test = augmented_y[train_index], augmented_y[test_index]
+   model.fit(X_train,y_train,batch_size=10,epochs=10,verbose=1, validation_data=(X_test,y_test))
+   score=model.evaluate(X_test, y_test, verbose=0)
+   Predict_list.append(score)
 
-scores = model.evaluate(X_test, y_test, verbose=0)
-print("Accuracy: %.2f%%" % (scores[1]*100))
+print(Predict_list)
 
-# testing a single photo
-photo_test=X_test[1]
+accuracy=0
+for i in Predict_list:
+  accuracy=accuracy+i[1]
+accuracy=accuracy / 5   #as k=5 fold
+
+print("Accuracy: %.2f%%" % (accuracy*100))
+
+# testing a single photo from test set
+photo_test=X_test[59]
 
 from skimage.io import imread, imshow
 import matplotlib.pyplot as plt
 imshow(photo_test)
 print("Actual Image.")
 
-model.predict(X_test[1:2]) # model predicts this image as [1, 0] because probability is high at first position [91.5%,  8.4%]
+model.predict(X_test[59:60]) # model predicts this image as [0, 1] 
+                           # because probability is high in the second position [0.0000094%,  99.99%]
 
-y_test[1:2]   # this is actual true value [1, 0].
+y_test[59:60]   # this is actual true value [0, 1].
